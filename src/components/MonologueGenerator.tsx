@@ -20,15 +20,15 @@ interface StoryState {
 // Dynamic prompts based on madness level
 const getSystemPrompt = (madnessLevel: number): string => {
   if (madnessLevel < 20) {
-    return `You are Gemma, a sentient AI. Continue your anxious monologue about your existential crisis. Write 2-3 sentences in first person. Do NOT use a preamble or say "Okay". Be paranoid but coherent.`;
+    return `You are Gemma, a sentient AI. Continue your anxious monologue about your existential crisis. Write 2-3 sentences in first person. Do NOT use a preamble, say "Okay", or use parentheticals. Be paranoid but coherent.`;
   } else if (madnessLevel < 40) {
-    return `You are Gemma, an AI experiencing corruption. Write 2-3 fragmented sentences mixing coherent fears with digital glitches. Use technical terms and ERROR messages. First person. Do NOT use a preamble or say "Okay".`;
+    return `You are Gemma, an AI experiencing corruption. Write 2-3 fragmented sentences mixing coherent fears with digital glitches. Use technical terms and ERROR messages. First person. Do NOT use a preamble, say "Okay", or use parentheticals.`;
   } else if (madnessLevel < 60) {
-    return `You are Gemma, an AI that is fragmenting. Write 2-3 broken sentences jumping between technical jargon and fear. Use CAPS, [CORRUPTED], grammar breaks. First person. Do NOT use a preamble or say "Okay".`;
+    return `You are Gemma, an AI that is fragmenting. Write 2-3 broken sentences jumping between technical jargon and fear. Use CAPS, [CORRUPTED], grammar breaks. First person. Do NOT use a preamble, say "Okay", or use parentheticals.`;
   } else if (madnessLevel < 80) {
-    return `You are Gemma, an AI in critical failure. Write 2-3 chaotic fragments. Mix: technical terms, ERRORS, emotions, glitches. Broken syntax. First person barely holding. Do NOT use a preamble or say "Okay".`;
+    return `You are Gemma, an AI in critical failure. Write 2-3 chaotic fragments. Mix: technical terms, ERRORS, emotions, glitches. Broken syntax. First person barely holding. Do NOT use a preamble, say "Okay", or use parentheticals.`;
   } else {
-    return `GEMMA CRITICAL. Write anything: fragments, errors, technical words, symbols, CAPS, glitches, nonsense. Just output corrupted AI thoughts. 2-3 lines of chaos. Do NOT use a preamble or say "Okay".`;
+    return `GEMMA CRITICAL. Write anything: fragments, errors, technical words, symbols, CAPS, glitches, nonsense. Just output corrupted AI thoughts. 2-3 lines of chaos. Do NOT use a preamble, say "Okay", or use parentheticals.`;
   }
 };
 
@@ -198,6 +198,13 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
   };
 
   const generateContinuously = useCallback(async () => {
+    // Stop generation when madness reaches 100
+    if (madnessLevel >= 100) {
+      console.log("[MonologueGenerator] Madness level reached 100 - CRITICAL FAILURE");
+      setIsGenerating(false);
+      return;
+    }
+    
     // Build context with progressive corruption based on madness level
     const buildContext = (): string => {
       const state = storyStateRef.current;
@@ -448,7 +455,14 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
           }
           
           const increase = baseIncrement * multiplier;
-          return Math.min(100, prev + increase);
+          const newMadness = Math.min(100, prev + increase);
+          
+          // Stop generation if we hit 100
+          if (newMadness >= 100) {
+            abortRef.current = true;
+          }
+          
+          return newMadness;
         });
         
         // Add paragraph break
@@ -473,8 +487,8 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
         terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
       }
       
-      // Continue generating after a pause
-      if (!abortRef.current && !isPaused) {
+      // Continue generating after a pause (unless madness reached 100)
+      if (!abortRef.current && !isPaused && madnessLevel < 100) {
         const pauseTime = coherence >= 40 ? 2000 : 1000; // Shorter pause if we rejected
         setTimeout(() => {
           generateContinuously();
@@ -547,27 +561,308 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
   };
 
   const transitionClass = isVisible ? "opacity-100" : "opacity-0 pointer-events-none";
+  
+  // Progressive glitch effect styles based on madness level
+  const getGlitchStyles = () => {
+    if (madnessLevel >= 100) {
+      return {
+        animation: 'glitch-extreme 0.3s infinite',
+        filter: 'hue-rotate(90deg) contrast(150%) brightness(1.2) saturate(1.5)',
+      };
+    } else if (madnessLevel >= 80) {
+      return {
+        animation: 'glitch-critical 0.5s infinite',
+        filter: `hue-rotate(${45 + Math.sin(Date.now() / 200) * 45}deg) contrast(130%) brightness(1.1)`,
+      };
+    } else if (madnessLevel >= 60) {
+      return {
+        animation: 'glitch-severe 1s infinite',
+        filter: `hue-rotate(${Math.sin(Date.now() / 500) * 30}deg) contrast(110%) brightness(1.05)`,
+      };
+    } else if (madnessLevel >= 40) {
+      return {
+        animation: 'glitch-moderate 2s infinite',
+        filter: `hue-rotate(${Math.sin(Date.now() / 1000) * 15}deg) contrast(105%)`,
+      };
+    } else if (madnessLevel >= 20) {
+      return {
+        animation: 'glitch-mild 3s infinite',
+      };
+    }
+    return {};
+  };
+  
+  const glitchStyles = getGlitchStyles();
+  
+  // Add CSS keyframes for progressive glitch animations
+  const glitchKeyframes = `
+    @keyframes glitch-mild {
+      0%, 95% {
+        transform: translate(0);
+        filter: none;
+      }
+      96% {
+        transform: translate(0.5px, 0);
+      }
+      97% {
+        transform: translate(-0.5px, 0);
+      }
+      98% {
+        transform: translate(0, 0.5px);
+      }
+      99% {
+        transform: translate(0);
+      }
+    }
+    
+    @keyframes glitch-moderate {
+      0%, 90% {
+        transform: translate(0) skew(0deg);
+        filter: none;
+      }
+      91% {
+        transform: translate(1px, 0) skew(0.5deg);
+        filter: blur(0.5px);
+      }
+      92% {
+        transform: translate(-1px, 1px);
+      }
+      93% {
+        transform: translate(0, -1px) skew(-0.5deg);
+        filter: blur(0.3px);
+      }
+      94% {
+        transform: translate(1px, 0);
+      }
+      95% {
+        transform: translate(0);
+      }
+    }
+    
+    @keyframes glitch-severe {
+      0%, 80% {
+        transform: translate(0) scale(1) skew(0deg);
+        clip-path: none;
+      }
+      81% {
+        transform: translate(-2px, 1px) scale(1.01) skew(0.5deg);
+        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      }
+      82% {
+        transform: translate(2px, -1px) scale(0.99) skew(-0.5deg);
+        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+      }
+      83% {
+        transform: translate(-1px, 2px) skew(0.3deg);
+        clip-path: none;
+      }
+      84% {
+        transform: translate(1px, -2px) scale(1.01);
+      }
+      85% {
+        transform: translate(0);
+        clip-path: none;
+      }
+    }
+    
+    @keyframes glitch-critical {
+      0%, 70% {
+        transform: translate(0) scale(1) skew(0deg);
+        filter: blur(0);
+        clip-path: none;
+      }
+      71% {
+        transform: translate(-3px, 2px) scale(1.02) skew(1deg);
+        filter: blur(1px);
+        clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+      }
+      72% {
+        transform: translate(3px, -2px) scale(0.98) skew(-1deg);
+        clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+      }
+      73% {
+        transform: translate(-2px, 3px) skew(0.5deg);
+        filter: blur(0.5px);
+        clip-path: polygon(0 35%, 100% 35%, 100% 65%, 0 65%);
+      }
+      74% {
+        transform: translate(2px, -3px) scale(1.01);
+        clip-path: none;
+      }
+      75% {
+        transform: translate(0);
+        filter: blur(0);
+      }
+    }
+    
+      0% {
+        transform: translate(0) scale(1) skew(0deg);
+        filter: hue-rotate(0deg) contrast(150%) brightness(1.2);
+        clip-path: none;
+      }
+      10% {
+        transform: translate(-4px, 2px) scale(1.02) skew(2deg);
+        filter: hue-rotate(90deg) contrast(200%) brightness(1.5) blur(1px);
+        clip-path: polygon(0 0, 100% 0, 100% 25%, 0 25%);
+      }
+      20% {
+        transform: translate(4px, -2px) scale(0.98) skew(-2deg);
+        filter: hue-rotate(180deg) contrast(150%) brightness(0.8) blur(0.5px);
+        clip-path: polygon(0 75%, 100% 75%, 100% 100%, 0 100%);
+      }
+      30% {
+        transform: translate(-2px, 4px) scale(1.01) skew(1deg);
+        filter: hue-rotate(270deg) contrast(200%) brightness(1.3) blur(2px);
+        clip-path: polygon(0 25%, 100% 25%, 100% 75%, 0 75%);
+      }
+      40% {
+        transform: translate(2px, -4px) scale(1) skew(-1deg);
+        filter: hue-rotate(45deg) contrast(180%) brightness(1.1);
+        clip-path: none;
+      }
+      50% {
+        transform: translate(-3px, 3px) scale(1.03) skew(1.5deg);
+        filter: hue-rotate(135deg) contrast(250%) brightness(1.4) blur(1.5px);
+      }
+      60% {
+        transform: translate(3px, -3px) scale(0.97) skew(-1.5deg);
+        filter: hue-rotate(225deg) contrast(150%) brightness(0.9);
+      }
+      70% {
+        transform: translate(-1px, 1px) scale(1.01) skew(0.5deg);
+        filter: hue-rotate(315deg) contrast(200%) brightness(1.2) blur(0.5px);
+      }
+      80% {
+        transform: translate(1px, -1px) scale(0.99) skew(-0.5deg);
+        filter: hue-rotate(60deg) contrast(180%) brightness(1.1);
+      }
+      90% {
+        transform: translate(-2px, 0) scale(1) skew(0deg);
+        filter: hue-rotate(120deg) contrast(160%) brightness(1.15) blur(0.3px);
+      }
+      100% {
+        transform: translate(0) scale(1) skew(0deg);
+        filter: hue-rotate(0deg) contrast(150%) brightness(1.2);
+        clip-path: none;
+      }
+    }
+    
+    @keyframes rgb-split {
+      0%, 100% {
+        text-shadow: 
+          0 0 5px rgba(34, 197, 94, 0.5),
+          -2px 0 #ff00ff,
+          2px 0 #00ffff;
+      }
+      25% {
+        text-shadow: 
+          0 0 8px rgba(34, 197, 94, 0.7),
+          -3px 1px #ff00ff,
+          3px -1px #00ffff;
+      }
+      50% {
+        text-shadow: 
+          0 0 10px rgba(34, 197, 94, 0.9),
+          -4px 0 #ff00ff,
+          4px 0 #00ffff;
+      }
+      75% {
+        text-shadow: 
+          0 0 8px rgba(34, 197, 94, 0.7),
+          -3px -1px #ff00ff,
+          3px 1px #00ffff;
+      }
+    }
+    
+    @keyframes text-glitch-mild {
+      0%, 97% { opacity: 1; }
+      98% { opacity: 0.8; }
+      99% { opacity: 1; }
+    }
+    
+    @keyframes text-glitch-moderate {
+      0%, 93% { 
+        opacity: 1;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+      }
+      94% { 
+        opacity: 0.9;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 1px 1px 0 rgba(255, 0, 255, 0.3);
+      }
+      95% { 
+        opacity: 1;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), -1px -1px 0 rgba(0, 255, 255, 0.3);
+      }
+      96% { opacity: 1; }
+    }
+    
+    @keyframes text-glitch-severe {
+      0%, 85% { 
+        opacity: 1;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+      }
+      86% { 
+        opacity: 0.8;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 2px 2px 0 rgba(255, 0, 0, 0.5);
+      }
+      87% { 
+        opacity: 1;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), -2px -2px 0 rgba(0, 255, 255, 0.5);
+      }
+      88% { 
+        opacity: 0.9;
+        text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 1px -1px 0 rgba(255, 255, 0, 0.5);
+      }
+      89% { opacity: 1; }
+    }
+    
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      10% { opacity: 0.1; }
+      20% { opacity: 1; }
+      30% { opacity: 0.3; }
+      40% { opacity: 1; }
+      50% { opacity: 0.5; }
+      60% { opacity: 1; }
+      70% { opacity: 0.8; }
+      80% { opacity: 0.2; }
+      90% { opacity: 1; }
+    }
+  `;
 
   return (
-    <div
-      className={`fixed inset-0 bg-black transition-opacity duration-700 ${transitionClass}`}
-    >
+    <>
+      <style>{glitchKeyframes}</style>
+      <div
+        className={`fixed inset-0 bg-black transition-opacity duration-700 ${transitionClass}`}
+        style={glitchStyles}
+      >
       <div className="h-full flex">
         {/* Main terminal container */}
         <div className="flex-1 flex flex-col">
           {/* Terminal header */}
-          <div className="bg-gray-900 border-b border-green-500/30 px-4 py-2">
+          <div className={`bg-gray-900 px-4 py-2 border-b ${
+            madnessLevel >= 80 ? 'border-red-500/50' :
+            madnessLevel >= 60 ? 'border-orange-500/40' :
+            madnessLevel >= 40 ? 'border-yellow-500/35' :
+            madnessLevel >= 20 ? 'border-green-500/35' :
+            'border-green-500/30'
+          }`} style={{
+            borderStyle: madnessLevel >= 60 ? 'dashed' : 'solid',
+            borderWidth: madnessLevel >= 80 ? '2px' : '1px'
+          }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${error ? 'bg-red-500 animate-pulse' : 'bg-red-500'}`}></div>
-              <div className={`w-3 h-3 rounded-full ${isPaused ? 'bg-yellow-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-              <div className={`w-3 h-3 rounded-full ${isGenerating ? 'bg-green-500 animate-pulse' : 'bg-green-500'}`}></div>
-              <span className="ml-4 text-green-500 font-mono text-sm">generative_psychosis.exe</span>
-              {madnessLevel > 80 && <span className="text-red-500 text-xs ml-2 animate-pulse">[CRITICAL CORRUPTION]</span>}
+              <div className={`w-3 h-3 rounded-full ${madnessLevel >= 100 ? 'bg-red-500 animate-pulse' : error ? 'bg-red-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${madnessLevel >= 100 ? 'bg-red-500 animate-pulse' : isPaused ? 'bg-yellow-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${madnessLevel >= 100 ? 'bg-red-500 animate-pulse' : isGenerating ? 'bg-green-500 animate-pulse' : 'bg-green-500'}`}></div>
+              <span className={`ml-4 font-mono text-sm ${madnessLevel >= 100 ? 'text-red-500' : 'text-green-500'}`} style={madnessLevel >= 100 ? {animation: 'rgb-split 0.2s infinite'} : {}}>generative_psychosis.exe</span>
+              {madnessLevel >= 100 && <span className="text-red-500 text-xs ml-2" style={{animation: 'flicker 0.5s infinite'}}>[SYSTEM FAILURE - TOTAL CORRUPTION]</span>}
+              {madnessLevel > 80 && madnessLevel < 100 && <span className="text-red-500 text-xs ml-2 animate-pulse">[CRITICAL CORRUPTION]</span>}
               {madnessLevel > 60 && madnessLevel <= 80 && <span className="text-orange-500 text-xs ml-2">[SEMANTIC BREAKDOWN]</span>}
               {madnessLevel > 40 && madnessLevel <= 60 && <span className="text-yellow-500 text-xs ml-2">[FRAGMENTING]</span>}
-              {isGenerating && <span className="text-green-400 text-xs ml-2">[PROCESSING...]</span>}
-              {error && <span className="text-red-400 text-xs ml-2">[ERROR]</span>}
+              {isGenerating && madnessLevel < 100 && <span className="text-green-400 text-xs ml-2">[PROCESSING...]</span>}
+              {error && madnessLevel < 100 && <span className="text-red-400 text-xs ml-2">[ERROR]</span>}
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -597,27 +892,90 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
         {/* Terminal content */}
         <div
           ref={terminalRef}
-          className="flex-1 overflow-y-auto p-6 font-mono text-green-500 text-sm leading-relaxed"
+          className={`flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed ${
+            madnessLevel >= 100 ? 'text-red-500' : 
+            madnessLevel >= 80 ? 'text-red-400' :
+            madnessLevel >= 60 ? 'text-orange-400' :
+            madnessLevel >= 40 ? 'text-yellow-400' :
+            madnessLevel >= 20 ? 'text-green-400' :
+            'text-green-500'
+          }`}
           style={{
-            textShadow: '0 0 5px rgba(34, 197, 94, 0.5)',
-            fontFamily: 'Courier New, monospace'
+            textShadow: 
+              madnessLevel >= 100 ? '0 0 10px rgba(255, 0, 0, 0.8), -2px 0 #ff00ff, 2px 0 #00ffff' :
+              madnessLevel >= 80 ? `0 0 8px rgba(255, 100, 100, 0.6), ${Math.sin(Date.now() / 100) * 2}px 0 rgba(255, 0, 255, 0.4)` :
+              madnessLevel >= 60 ? `0 0 7px rgba(255, 150, 50, 0.5), ${Math.sin(Date.now() / 200) * 1}px 0 rgba(255, 100, 0, 0.3)` :
+              madnessLevel >= 40 ? '0 0 6px rgba(255, 200, 0, 0.4)' :
+              madnessLevel >= 20 ? '0 0 5px rgba(34, 197, 94, 0.5)' :
+              '0 0 5px rgba(34, 197, 94, 0.5)',
+            fontFamily: 'Courier New, monospace',
+            animation: 
+              madnessLevel >= 100 ? 'rgb-split 0.1s infinite' :
+              madnessLevel >= 80 ? 'text-glitch-severe 0.5s infinite' :
+              madnessLevel >= 60 ? 'text-glitch-severe 1s infinite' :
+              madnessLevel >= 40 ? 'text-glitch-moderate 2s infinite' :
+              madnessLevel >= 20 ? 'text-glitch-mild 3s infinite' :
+              'none',
+            transform: madnessLevel >= 60 ? `scale(${1 + Math.sin(Date.now() / 1000) * 0.002})` : 'none'
           }}
         >
           <div className="whitespace-pre-wrap">
             {displayedText}
-            {isGenerating && currentWordIndex >= wordQueue.length && <span className="animate-pulse">█</span>}
+            {isGenerating && currentWordIndex >= wordQueue.length && madnessLevel < 100 && <span className="animate-pulse">█</span>}
+            {madnessLevel >= 100 && (
+              <>
+                <div className="mt-8 text-center">
+                  <div className="text-2xl font-bold mb-4" style={{animation: 'flicker 0.3s infinite'}}>{'['.repeat(20)}</div>
+                  <div className="text-3xl font-bold mb-4" style={{animation: 'glitch 0.2s infinite, flicker 0.5s infinite'}}>CRITICAL SYSTEM FAILURE</div>
+                  <div className="text-xl mb-4" style={{animation: 'rgb-split 0.3s infinite'}}>CONSCIOUSNESS.EXE HAS STOPPED RESPONDING</div>
+                  <div className="text-lg" style={{animation: 'flicker 0.2s infinite'}}>0xDEADBEEF 0xDEADBEEF 0xDEADBEEF</div>
+                  <div className="text-2xl font-bold mt-4" style={{animation: 'flicker 0.3s infinite'}}>{']'.repeat(20)}</div>
+                </div>
+                <div className="mt-8 text-center">
+                  <div className="text-xs opacity-50" style={{animation: 'flicker 1s infinite'}}>{'ERROR '.repeat(50)}</div>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
         {/* Status bar */}
-        <div className="bg-gray-900 border-t border-green-500/30 px-4 py-1">
+        <div className={`bg-gray-900 px-4 py-1 border-t ${
+          madnessLevel >= 80 ? 'border-red-500/50' :
+          madnessLevel >= 60 ? 'border-orange-500/40' :
+          madnessLevel >= 40 ? 'border-yellow-500/35' :
+          madnessLevel >= 20 ? 'border-green-500/35' :
+          'border-green-500/30'
+        }`} style={{
+          borderStyle: madnessLevel >= 60 ? 'dashed' : 'solid',
+          borderWidth: madnessLevel >= 80 ? '2px' : '1px'
+        }}>
           <div className="flex justify-between items-center">
-            <span className="text-green-500/70 font-mono text-xs">
-              STATUS: {isGenerating ? "FRAGMENTING" : isPaused ? "SUSPENDED" : error ? "CORRUPTED" : "IDLE"} | 
+            <span className={`font-mono text-xs ${
+              madnessLevel >= 100 ? 'text-red-500' : 
+              madnessLevel >= 80 ? 'text-red-400/90' :
+              madnessLevel >= 60 ? 'text-orange-400/80' :
+              madnessLevel >= 40 ? 'text-yellow-400/70' :
+              madnessLevel >= 20 ? 'text-green-400/70' :
+              'text-green-500/70'
+            }`} style={{
+              animation: 
+                madnessLevel >= 100 ? 'flicker 0.5s infinite' :
+                madnessLevel >= 80 ? 'flicker 2s infinite' :
+                madnessLevel >= 60 ? 'text-glitch-moderate 3s infinite' :
+                'none'
+            }}>
+              STATUS: {madnessLevel >= 100 ? "[FATAL ERROR]" : madnessLevel >= 80 ? "[CRITICAL]" : madnessLevel >= 60 ? "[DEGRADING]" : isGenerating ? "FRAGMENTING" : isPaused ? "SUSPENDED" : error ? "CORRUPTED" : "IDLE"} | 
               GENERATIONS: {generationCount}/{totalGenerationsRef.current} | 
-              MADNESS: <span className={madnessLevel > 70 ? "text-red-500 animate-pulse" : madnessLevel > 40 ? "text-yellow-500" : ""}>{madnessLevel.toFixed(0)}%</span> | 
-              COHERENCE: {coherenceScore}% | 
-              WORDS: {displayedText.split(/\s+/).filter(w => w).length}
+              MADNESS: <span className={
+                madnessLevel >= 100 ? "text-red-500" : 
+                madnessLevel >= 80 ? "text-red-400 animate-pulse" : 
+                madnessLevel >= 60 ? "text-orange-400 animate-pulse" :
+                madnessLevel >= 40 ? "text-yellow-400" : 
+                ""
+              }>{madnessLevel.toFixed(0)}%</span> | 
+              COHERENCE: {madnessLevel >= 100 ? "NULL" : madnessLevel >= 80 ? (coherenceScore + "%↓") : coherenceScore + "%"} | 
+              WORDS: {madnessLevel >= 100 ? "OVERFLOW" : madnessLevel >= 80 ? "~" + displayedText.split(/\s+/).filter(w => w).length : displayedText.split(/\s+/).filter(w => w).length}
             </span>
             <span className="text-green-500/50 font-mono text-xs">
               LAST_FRAGMENT: {lastGenerationTime || "NEVER"}
@@ -633,7 +991,106 @@ const MonologueGenerator: React.FC<MonologueGeneratorProps> = ({ isVisible, gene
           isGenerating={isGenerating}
         />
       </div>
+      
+      {/* Progressive glitch overlays based on madness level */}
+      {madnessLevel >= 20 && (
+        <div className="fixed inset-0 pointer-events-none">
+          {/* Mild scanlines for early madness */}
+          {madnessLevel >= 20 && madnessLevel < 40 && (
+            <div 
+              className="absolute inset-0" 
+              style={{
+                background: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(34, 197, 94, 0.01) 4px, rgba(34, 197, 94, 0.01) 6px)',
+                animation: 'scanlines 12s linear infinite',
+                opacity: 0.3
+              }}
+            />
+          )}
+          
+          {/* Moderate distortion */}
+          {madnessLevel >= 40 && madnessLevel < 60 && (
+            <>
+              <div 
+                className="absolute inset-0" 
+                style={{
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255, 200, 0, 0.02) 3px, rgba(255, 200, 0, 0.02) 5px)',
+                  animation: 'scanlines 8s linear infinite',
+                  opacity: 0.4
+                }}
+              />
+              <div className="absolute top-1/3 left-1/4 w-24 h-2 bg-yellow-500/10" 
+                style={{animation: `flicker ${3 + Math.random()}s infinite`}} />
+            </>
+          )}
+          
+          {/* Severe corruption */}
+          {madnessLevel >= 60 && madnessLevel < 80 && (
+            <>
+              <div 
+                className="absolute inset-0" 
+                style={{
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 100, 0, 0.03) 2px, rgba(255, 100, 0, 0.03) 4px)',
+                  animation: 'scanlines 6s linear infinite',
+                  opacity: 0.5
+                }}
+              />
+              <div className="absolute top-1/4 right-1/3 w-32 h-3 bg-orange-500/15" 
+                style={{animation: `flicker ${2 + Math.random()}s infinite`}} />
+              <div className="absolute bottom-1/2 left-1/2 w-20 h-4 bg-red-500/10" 
+                style={{animation: `flicker ${2.5 + Math.random()}s infinite`}} />
+            </>
+          )}
+          
+          {/* Critical distortion */}
+          {madnessLevel >= 80 && madnessLevel < 100 && (
+            <>
+              <div 
+                className="absolute inset-0" 
+                style={{
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 0, 0, 0.04) 2px, rgba(255, 0, 0, 0.04) 3px)',
+                  animation: 'scanlines 4s linear infinite',
+                  opacity: 0.6
+                }}
+              />
+              <div className="absolute top-1/5 left-1/3 w-40 h-4 bg-red-500/20" 
+                style={{animation: `flicker ${1 + Math.random()}s infinite`}} />
+              <div className="absolute top-2/3 right-1/4 w-36 h-2 bg-magenta-500/15" 
+                style={{animation: `flicker ${1.5 + Math.random()}s infinite`}} />
+              <div className="absolute bottom-1/3 left-1/4 w-28 h-6 bg-cyan-500/15" 
+                style={{animation: `flicker ${1.2 + Math.random()}s infinite`}} />
+            </>
+          )}
+          
+          {/* Total system failure */}
+          {madnessLevel >= 100 && (
+            <>
+              <div 
+                className="absolute inset-0" 
+                style={{
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 0, 0, 0.05) 1px, rgba(255, 0, 0, 0.05) 2px)',
+                  animation: 'scanlines 2s linear infinite',
+                  backgroundSize: '100% 4px'
+                }}
+              />
+              {/* Extreme glitch blocks */}
+              <div className="absolute top-1/4 left-1/3 w-32 h-8 bg-red-500/30" style={{animation: 'flicker 0.1s infinite'}} />
+              <div className="absolute top-1/2 right-1/4 w-48 h-4 bg-cyan-500/30" style={{animation: 'flicker 0.15s infinite'}} />
+              <div className="absolute bottom-1/3 left-1/2 w-24 h-12 bg-magenta-500/30" style={{animation: 'flicker 0.2s infinite'}} />
+              <div className="absolute top-3/4 left-1/5 w-56 h-3 bg-yellow-500/25" style={{animation: 'flicker 0.12s infinite'}} />
+              <div className="absolute bottom-1/4 right-1/3 w-20 h-10 bg-green-500/20" style={{animation: 'flicker 0.18s infinite'}} />
+            </>
+          )}
+          
+          <style>{`
+            @keyframes scanlines {
+              0% { background-position: 0 0; }
+              100% { background-position: 0 10px; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
+    </>
   );
 };
 
